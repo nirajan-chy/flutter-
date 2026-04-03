@@ -21,7 +21,7 @@ return Scaffold(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 200),
+              const SizedBox(height: 10),
 
               const Text(
                 'Welcome',
