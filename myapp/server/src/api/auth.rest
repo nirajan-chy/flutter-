@@ -1,0 +1,20 @@
+###
+POST http://localhost:5000/auth/register
+Content-Type: application/json
+
+{
+  "name": "Nirajan",
+  "email": "nirajan@example.com",
+  "password": "12345678",
+  "phone": "9800000000"
+}
+
+###
+
+POST http://localhost:5000/auth/login
+Content-Type: application/json
+
+{
+  "email": "nirajan@example.com",
+  "password": "12345678"
+}

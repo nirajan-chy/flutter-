@@ -1,0 +1,53 @@
+@baseUrl = http://localhost:5000
+@authToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijg0Y2QyZGY4LTE4YzUtNGIyNy04NTQwLTcwOGMxNThkZGYyYiIsImVtYWlsIjoibmlyYWphbkBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc0NjY3MDU3LCJleHAiOjE3NzUyNzE4NTd9.c4qzFu2w5l6ug6QKuzfUl59v_Mlb86rit4KFKhz_DkA
+@reminderId = 00000000-0000-0000-0000-000000000000
+
+###
+POST {{baseUrl}}/reminder/create
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+# {
+#   "title": "Wake up",
+#   "description": "Morning alarm",
+#   "time": "2026-03-29T06:00:00Z",
+#   "repeat": "daily",
+#   "repeatDays": ["Mon", "Wed"],
+#   "timezone": "Asia/Kathmandu",
+#   "snoozeMinutes": 5
+# }
+
+{
+  "title": "Wake up",
+  "description": "Morning alarm",
+  "time": "2026-03-28 09:36:00",
+  "repeat": "none",
+  "timezone": "Asia/Kathmandu"
+}
+
+###
+GET {{baseUrl}}/reminder/getAll
+Authorization: Bearer {{authToken}}
+
+###
+GET {{baseUrl}}/reminder/getById/{{reminderId}}
+Authorization: Bearer {{authToken}}
+
+###
+PATCH {{baseUrl}}/reminder/update/{{reminderId}}
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "title": "Wake up Updated",
+  "description": "Morning alarm with extra context",
+  "time": "2026-03-30T06:15:00Z",
+  "repeat": "weekly",
+  "repeatDays": ["Fri"],
+  "timezone": "Asia/Kathmandu",
+  "snoozeMinutes": 10
+}
+
+###
+DELETE {{baseUrl}}/reminder/delete/{{reminderId}}
+Authorization: Bearer {{authToken}}
