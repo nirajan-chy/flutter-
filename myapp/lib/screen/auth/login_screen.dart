@@ -1,5 +1,8 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/screen/auth/register_screen.dart';
+import 'package:myapp/screen/dashboard/dashboard.dart';
 
 class loginPage extends StatefulWidget {
   const loginPage({super.key});
@@ -9,15 +12,64 @@ class loginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<loginPage> {
+  String get _baseUrl {
+    if (kIsWeb) return "http://localhost:5000";
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return "http://10.0.2.2:5000";
+    }
+    return "http://localhost:5000";
+  }
+
+  late final Dio dio;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _rememberMe = false;
 
   @override
+  void initState() {
+    super.initState();
+    dio = Dio(
+      BaseOptions(
+        baseUrl: _baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+  }
+
+  void fetchUser() async {
+    final response = await dio.get("user");
+    print(response.data);
+  }
+
+  Future<void> _login() async {
+    try {
+      final response = await dio.post(
+        '/auth/login',
+        data: {
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text.trim(),
+        },
+      );
+      print(response.data);
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const dashboard()),
+      );
+    } on DioException catch (e) {
+      print("Error message: ${e.message}");
+      print("Status code: ${e.response?.statusCode}");
+      print("Error data: ${e.response?.data}");
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    super.dispose();
+    super.dispose(); 
   }
 
   @override
@@ -81,7 +133,7 @@ class _LoginPageState extends State<loginPage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: _login,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
               ),

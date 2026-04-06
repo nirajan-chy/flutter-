@@ -28,7 +28,7 @@ class _RegisterPageState extends State<registerPage> {
     ),
   );
   late TextEditingController fullnameController;
-  late TextEditingController emailController;
+  late TextEditingController emailController; 
   late TextEditingController passwordController;
 
   @override
