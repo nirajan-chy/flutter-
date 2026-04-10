@@ -18,7 +18,7 @@ class _RegisterPageState extends State<registerPage> {
     }
     return 'http://localhost:5000';
   }
-
+                                                                              
   final Dio dio = Dio(
     BaseOptions(
       baseUrl: 'http://localhost:5000',

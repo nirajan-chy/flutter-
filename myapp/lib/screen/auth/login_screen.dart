@@ -56,7 +56,7 @@ class _LoginPageState extends State<loginPage> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const dashboard()),
+        MaterialPageRoute(builder: (context) => const DashboardScreen()),
       );
     } on DioException catch (e) {
       print("Error message: ${e.message}");
