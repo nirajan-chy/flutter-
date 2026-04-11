@@ -35,6 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   bool _isLoading = true;
   bool _isAlarmDialogOpen = false;
+  bool _isAddSheetOpen = false;
   Timer? _alarmCheckTimer;
 
   static const String _alarmAssetPath = 'audio 2.wav';
@@ -148,7 +149,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _checkDueAlarms() {
-    if (!mounted || _isAlarmDialogOpen) return;
+    if (!mounted || _isAlarmDialogOpen || _isAddSheetOpen) return;
 
     final now = DateTime.now();
 
@@ -231,7 +232,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _alarms[index] = updated;
         });
-        await NotificationService.instance.scheduleReminder(updated);
+        try {
+          await NotificationService.instance.scheduleReminder(updated);
+        } catch (_) {
+          _showSnack('Reminder updated, but notification sync failed');
+        }
+        await _fetchReminders();
       }
     } on DioException catch (_) {
       if (!mounted) return;
@@ -250,7 +256,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _alarms.removeWhere((r) => r.id == alarm.id);
       });
-      await NotificationService.instance.cancelReminder(alarm.id);
+      try {
+        await NotificationService.instance.cancelReminder(alarm.id);
+      } catch (_) {
+        _showSnack('Reminder removed, but notification sync failed');
+      }
+      await _fetchReminders();
       _showSnack('Reminder deleted');
     } on DioException catch (_) {
       if (!mounted) return;
@@ -285,6 +296,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _showAddReminderSheet() async {
+    _isAddSheetOpen = true;
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
     TimeOfDay selectedTime = TimeOfDay.now();
@@ -294,6 +306,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
+      requestFocus: true,
       backgroundColor: const Color(0xFF0F172A),
       builder: (ctx) {
         return StatefulBuilder(
@@ -305,10 +319,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 16,
                 16 + MediaQuery.of(ctx).viewInsets.bottom,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   const Text(
                     'Create Reminder',
                     style: TextStyle(
@@ -318,8 +333,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
+                    TextFormField(
                     controller: titleController,
+                      keyboardType: TextInputType.text,
+                      textInputAction: TextInputAction.next,
+                      enableSuggestions: true,
+                      autocorrect: true,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Title',
@@ -333,8 +352,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
+                    TextFormField(
                     controller: descriptionController,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.done,
+                      maxLines: 3,
+                      minLines: 1,
+                      enableSuggestions: true,
+                      autocorrect: true,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Description (optional)',
@@ -449,8 +474,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     (a, b) => a.time.compareTo(b.time),
                                   );
                                 });
-                                await NotificationService.instance
-                                    .scheduleReminder(created);
+                                  try {
+                                    await NotificationService.instance
+                                        .scheduleReminder(created);
+                                  } catch (_) {
+                                    _showSnack(
+                                      'Reminder saved, but notification sync failed',
+                                    );
+                                  }
+                                  await _fetchReminders();
                                 Navigator.pop(ctx);
                                 _showSnack('Reminder created');
                               } on DioException catch (e) {
@@ -476,12 +508,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ],
+                ),
               ),
             );
           },
         );
       },
     );
+
+    _isAddSheetOpen = false;
   }
 
   ReminderModel? get _nextAlarm {
