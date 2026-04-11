@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:myapp/screen/auth/login_screen.dart';
+import 'package:myapp/core/services/auth_service.dart';
 
 class registerPage extends StatefulWidget {
   const registerPage({super.key});
@@ -11,38 +11,18 @@ class registerPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<registerPage> {
-  String get _baseUrl {
-    if (kIsWeb) return 'http://localhost:5000';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:5000';
-    }
-    return 'http://localhost:5000';
-  }
-                                                                              
-  final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: 'http://localhost:5000',
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-      headers: {'Content-Type': 'application/json'},
-    ),
-  );
+  final AuthService _authService = AuthService();
   late TextEditingController fullnameController;
-  late TextEditingController emailController; 
+  late TextEditingController emailController;
   late TextEditingController passwordController;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    dio.options.baseUrl = _baseUrl;
     fullnameController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
-  }
-
-  void fetchUser() async {
-    final response = await dio.get('user');
-    print(response.data);
   }
 
   @override
@@ -94,43 +74,78 @@ class _RegisterPageState extends State<registerPage> {
             ),
             SizedBox(height: 45),
             ElevatedButton(
-              onPressed: () async {
-                try {
-                  final response = await dio.post(
-                    '/auth/register',
-                    data: {
-                      'name': fullnameController.text.trim(),
-                      'email': emailController.text.trim(),
-                      'password': passwordController.text.trim(),
+              onPressed: _isSubmitting
+                  ? null
+                  : () async {
+                      final name = fullnameController.text.trim();
+                      final email = emailController.text.trim();
+                      final password = passwordController.text.trim();
+
+                      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Name, email and password are required',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      setState(() {
+                        _isSubmitting = true;
+                      });
+
+                      try {
+                        final response = await _authService.register(
+                          name: name,
+                          email: email,
+                          password: password,
+                        );
+
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              response['message']?.toString() ??
+                                  'Signup successful',
+                            ),
+                          ),
+                        );
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const loginPage(),
+                          ),
+                        );
+                      } on DioException catch (e) {
+                        if (!mounted) return;
+                        final message = e.response?.data is Map
+                            ? (e.response?.data['message']?.toString() ??
+                                  'Signup failed')
+                            : 'Signup failed';
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(message)));
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isSubmitting = false;
+                          });
+                        }
+                      }
                     },
-                  );
-
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        response.data['message'] ?? 'Signup successful',
-                      ),
-                    ),
-                  );
-                } on DioException catch (e) {
-                  print("Error message : ${e.message}");
-                  print("Error message : ${e.response?.statusCode}");
-                  print("Error message : ${e.response?.data}");
-
-                  if (!mounted) return;
-                  final message = e.response?.data is Map
-                      ? (e.response?.data['message'] ?? 'Signup failed')
-                      : 'Signup failed';
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(message.toString())));
-                }
-              },
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(double.infinity, 50),
               ),
-              child: Text("signup"),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text("signup"),
             ),
             SizedBox(height: 30),
             Row(

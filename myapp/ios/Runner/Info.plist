@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>This app uses notifications to ring reminder alarms on time.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>This app uses notifications to ring reminder alarms on time.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

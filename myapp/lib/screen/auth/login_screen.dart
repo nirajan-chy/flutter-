@@ -1,9 +1,8 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myapp/screen/auth/register_screen.dart';
 import 'package:myapp/screen/dashboard/dashboard.dart';
+import 'package:myapp/core/services/auth_service.dart';
+import 'package:dio/dio.dart';
 
 class loginPage extends StatefulWidget {
   const loginPage({super.key});
@@ -13,73 +12,58 @@ class loginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<loginPage> {
-  String get _baseUrl {
-    if (kIsWeb) return "http://localhost:5000";
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return "http://10.0.2.2:5000";
-    }
-    return "http://localhost:5000";
-  }
-
-  late final Dio dio;
+  final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _rememberMe = false;
-
-  @override
-  void initState() {
-    super.initState();
-    dio = Dio(
-      BaseOptions(
-        baseUrl: _baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
-  }
-
-  void fetchUser() async {
-    final response = await dio.get("user");
-    print(response.data);
-  }
+  bool _isSubmitting = false;
 
   Future<void> _login() async {
-    try {
-      final response = await dio.post(
-        '/auth/login',
-        data: {
-          'email': _emailController.text.trim(),
-          'password': _passwordController.text.trim(),
-        },
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email and password are required')),
       );
-      final token = response.data['token'] as String?;
-      final userData = response.data['data'] as Map<String, dynamic>?;
+      return;
+    }
 
-      if (token != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
+    setState(() {
+      _isSubmitting = true;
+    });
 
-        if (userData != null) {
-          await prefs.setString('userName', userData['name']?.toString() ?? '');
-          await prefs.setString(
-            'userEmail',
-            userData['email']?.toString() ?? '',
-          );
-        }
-
-        dio.options.headers['Authorization'] = 'Bearer $token';
-      }
+    try {
+      final response = await _authService.login(
+        email: email,
+        password: password,
+      );
+      final userData = response['data'] is Map
+          ? Map<String, dynamic>.from(response['data'] as Map)
+          : <String, dynamic>{};
+      final realName = userData['name']?.toString().trim() ?? '';
 
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        MaterialPageRoute(
+          builder: (context) => DashboardScreen(initialUserName: realName),
+        ),
       );
     } on DioException catch (e) {
-      print("Error message: ${e.message}");
-      print("Status code: ${e.response?.statusCode}");
-      print("Error data: ${e.response?.data}");
+      if (!mounted) return;
+      final message = e.response?.data is Map
+          ? (e.response?.data['message']?.toString() ?? 'Login failed')
+          : 'Login failed';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -87,7 +71,7 @@ class _LoginPageState extends State<loginPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    super.dispose(); 
+    super.dispose();
   }
 
   @override
@@ -151,11 +135,17 @@ class _LoginPageState extends State<loginPage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _login,
+              onPressed: _isSubmitting ? null : _login,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
               ),
-              child: const Text('Login'),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Login'),
             ),
             const SizedBox(height: 30),
             Row(

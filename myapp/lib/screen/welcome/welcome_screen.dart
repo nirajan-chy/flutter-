@@ -13,7 +13,7 @@ return Scaffold(
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/home.png'),
-            fit: BoxFit.cover, // ✅ full cover
+            fit: BoxFit.cover, 
           ),
         ),
         child: Padding(
