@@ -18,3 +18,7 @@ Content-Type: application/json
   "email": "nirajan@example.com",
   "password": "12345678"
 }
+
+###
+
+GET http://localhost:5000/auth/getuser/57367e30-9e6c-4fd2-92bb-73c6aabaa61c

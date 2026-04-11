@@ -114,7 +114,23 @@ const login = async (req, res) => {
   }
 };
 
+const getUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.json("User not found");
+    res.status(200).json({
+      message: "User retrived sucessfully",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   signup,
   login,
+  getUser,
 };

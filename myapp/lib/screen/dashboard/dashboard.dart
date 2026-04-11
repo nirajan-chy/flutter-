@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -42,6 +43,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return 'http://localhost:5000';
     }
     return 'http://localhost:5000';
+  }
+  late final Dio dio;
+
+  @override
+  void initState() {
+    super.initState();
+    dio = Dio(
+      BaseOptions(
+        baseUrl: _baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+  }
+
+  void fetchUser() async {
+    final response = await dio.get('user');
+    print(response.data);
   }
 
   final List<AlarmModel> _alarms = [
@@ -88,6 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
   ];
 
+
   AlarmModel? get _nextAlarm {
     final now = TimeOfDay.now();
     final enabled = _alarms.where((a) => a.isEnabled).toList();
@@ -103,6 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   int _minutesUntil(TimeOfDay t) {
+
     final now = TimeOfDay.now();
     final diff = (t.hour * 60 + t.minute) - (now.hour * 60 + now.minute);
     return diff < 0 ? diff + 1440 : diff;

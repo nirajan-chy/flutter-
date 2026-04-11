@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myapp/screen/auth/register_screen.dart';
 import 'package:myapp/screen/dashboard/dashboard.dart';
 
@@ -52,7 +53,24 @@ class _LoginPageState extends State<loginPage> {
           'password': _passwordController.text.trim(),
         },
       );
-      print(response.data);
+      final token = response.data['token'] as String?;
+      final userData = response.data['data'] as Map<String, dynamic>?;
+
+      if (token != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+
+        if (userData != null) {
+          await prefs.setString('userName', userData['name']?.toString() ?? '');
+          await prefs.setString(
+            'userEmail',
+            userData['email']?.toString() ?? '',
+          );
+        }
+
+        dio.options.headers['Authorization'] = 'Bearer $token';
+      }
+
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
